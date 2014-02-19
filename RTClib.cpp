@@ -51,11 +51,12 @@ static long time2long(uint16_t days, uint8_t h, uint8_t m, uint8_t s) {
 DateTime::DateTime (uint32_t t) {
   t -= SECONDS_FROM_1970_TO_2000;    // bring to 2000 timestamp from 1970
 
-    ss = t % 60;
+    uint8_t ss = t % 60;
     t /= 60;
-    mm = t % 60;
+    uint8_t mm = t % 60;
     t /= 60;
-    hh = t % 24;
+    uint8_t hh = t % 24;
+    time = Time(hh, mm, ss);
     uint16_t days = t / 24;
     uint8_t leap;
     for (yOff = 0; ; ++yOff) {
@@ -81,9 +82,7 @@ DateTime::DateTime (uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uin
     yOff = year;
     m = month;
     d = day;
-    hh = hour;
-    mm = min;
-    ss = sec;
+    time = Time(hour, min, sec);
 }
 
 static uint8_t conv2d(const char* p) {
@@ -111,6 +110,10 @@ DateTime::DateTime (const char* date, const char* time) {
         case 'D': m = 12; break;
     }
     d = conv2d(date + 4);
+    this->time = Time(time);
+}
+
+Time::Time (const char* time) {
     hh = conv2d(time);
     mm = conv2d(time + 3);
     ss = conv2d(time + 6);
@@ -124,10 +127,42 @@ uint8_t DateTime::dayOfWeek() const {
 uint32_t DateTime::unixtime(void) const {
   uint32_t t;
   uint16_t days = date2days(yOff, m, d);
-  t = time2long(days, hh, mm, ss);
+  t = time2long(days, time.hour(), time.minute(), time.second());
   t += SECONDS_FROM_1970_TO_2000;  // seconds from 1970 to 2000
 
   return t;
+}
+
+int DateTime::compare(const DateTime& d) {
+  uint32_t thisTime = unixtime();
+  uint32_t thatTime = d.unixtime();
+  if(thisTime < thatTime) {
+    return -1;
+  } else if (thisTime > thatTime) {
+    return 1;
+  }
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Time implementation
+
+DateTime Time::onDate(DateTime d){
+  return DateTime(d.year(), d.month(), d.day(), hour(), minute(), second());
+}
+DateTime Time::nextOccurence(DateTime d){
+  DateTime result = onDate(d);
+  if (result > d)
+    return result;
+  else 
+    return DateTime(result.unixtime() + 86400L); // one day later
+}
+DateTime Time::prevOccurence(DateTime d){
+  DateTime result = onDate(d);
+  if (result <= d)
+    return result;
+  else 
+    return DateTime(result.unixtime() - 86400L); // one day earlier
 }
 
 ////////////////////////////////////////////////////////////////////////////////

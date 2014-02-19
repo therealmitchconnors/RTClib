@@ -4,6 +4,24 @@
 #ifndef _RTCLIB_H_
 #define _RTCLIB_H_
 
+
+class DateTime;
+class Time
+{
+  public:
+    Time() {};
+    Time(uint8_t hour, uint8_t min, uint8_t sec = 0) : hh(hour), mm(min), ss(sec) {}
+    Time(const char* time);
+    uint8_t hour() const        { return hh; }
+    uint8_t minute() const      { return mm; }
+    uint8_t second() const      { return ss; }
+    DateTime onDate(DateTime);
+    DateTime nextOccurence(DateTime);
+    DateTime prevOccurence(DateTime);
+  protected:
+    uint8_t hh, mm, ss;
+};
+
 // Simple general-purpose date/time class (no TZ / DST / leap second handling!)
 class DateTime {
 public:
@@ -14,18 +32,39 @@ public:
     uint16_t year() const       { return 2000 + yOff; }
     uint8_t month() const       { return m; }
     uint8_t day() const         { return d; }
-    uint8_t hour() const        { return hh; }
-    uint8_t minute() const      { return mm; }
-    uint8_t second() const      { return ss; }
+    uint8_t hour() const        { return time.hour(); }
+    uint8_t minute() const      { return time.minute(); }
+    uint8_t second() const      { return time.second(); }
+    Time getTime() const           { return time; }
     uint8_t dayOfWeek() const;
 
     // 32-bit times as seconds since 1/1/2000
     long secondstime() const;   
     // 32-bit times as seconds since 1/1/1970
     uint32_t unixtime(void) const;
+    int compare (const DateTime&);
+    bool operator == (DateTime d) {
+        return !compare(d);
+    }
+    bool operator != (DateTime d) {
+        return !!compare(d);
+    }
+    bool operator < (DateTime d) {
+        return compare(d)<0;
+    }
+    bool operator <= (DateTime d) {
+        return compare(d)<1;
+    }
+    bool operator > (DateTime d) {
+        return compare(d)>0;
+    }
+    bool operator >= (DateTime d) {
+        return compare(d)>-1;
+    }
 
 protected:
-    uint8_t yOff, m, d, hh, mm, ss;
+    uint8_t yOff, m, d;
+    Time time;
 };
 
 // RTC based on the DS1307 chip connected via I2C and the Wire library
